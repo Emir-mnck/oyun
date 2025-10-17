@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title></title>
+<style>
+  body { margin:0; background:#111; overflow:hidden; font-family:sans-serif; }
+  #player { position:absolute; width:60px; height:30px; background:#37474f; border:2px solid #fff3; border-radius:8px; bottom:20px; left:50%; transform:translateX(-50%); }
+  .item { position:absolute; font-size:32px; }
+  #score { position:absolute; top:20px; right:20px; font-size:24px; color:#fff; font-weight:bold; }
+  #gameOver { position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); display:flex; justify-content:center; align-items:center; flex-direction:column; color:#fff; font-size:24px; display:none; }
+  #passwordScreen { position:absolute; top:0; left:0; width:100%; height:100%; background:#000; display:flex; justify-content:center; align-items:center; }
+  #passwordScreen input { font-size:20px; padding:10px; text-align:center; background:#222; color:#fff; border:none; border-radius:6px; outline:none; }
+  #specialImage { position:absolute; width:200px; height:200px; top:50%; left:50%; transform:translate(-50%,-50%); display:none; }
+</style>
+</head>
+<body>
+
+<div id="passwordScreen">
+  <input type="password" id="passwordInput" autofocus placeholder="">
+</div>
+
+<div id="player"></div>
+<div id="score">❤️ 0</div>
+<div id="gameOver">
+  <div>💔</div>
+  <div id="finalScore"></div>
+  <button onclick="resetGame()">Tekrar Dene Eşşşşşşeğim</button>
+</div>
+
+
+<img id="specialImage" src="image.jpg" alt="Special Image">
+
+<script>
+let player = document.getElementById('player');
+let scoreEl = document.getElementById('score');
+let gameOverEl = document.getElementById('gameOver');
+let finalScoreEl = document.getElementById('finalScore');
+let passwordScreen = document.getElementById('passwordScreen');
+let passwordInput = document.getElementById('passwordInput');
+let specialImage = document.getElementById('specialImage');
+
+const correctPassword = btoa('mina'); // şifre base64 ile gizlendi
+
+passwordInput.addEventListener('keypress', function(e){
+  if(e.key === 'Enter'){
+    if(btoa(passwordInput.value) === correctPassword){
+      passwordScreen.style.display='none';
+      startGame();
+    } else {
+      passwordInput.value='';
+      alert('Yanlış');
+    }
+  }
+});
+
+let playerX = window.innerWidth/2;
+let playerWidth = 60;
+let playerHeight = 30;
+let score = 0;
+let running = false;
+let gameOver = false;
+let items = [];
+
+document.addEventListener('mousemove', e=>{
+  playerX = e.clientX;
+  player.style.left = (playerX - playerWidth/2) + 'px';
+});
+
+function createItem(){
+  let x = Math.random()*window.innerWidth;
+  let broken = Math.random() < 0.25;
+  let speed = 2 + Math.random()*3;
+  let el = document.createElement('div');
+  el.className='item';
+  el.style.left=x+'px';
+  el.style.top='-50px';
+  el.innerText = broken ? '💔' : (score>=25 ? '❤️‍🔥' : '❤️');
+  document.body.appendChild(el);
+  items.push({el, x, y:-50, speed, broken});
+}
+
+function startGame(){
+  running=true;
+  gameOver=false;
+  score=0;
+  scoreEl.innerText='❤️ 0';
+  items.forEach(i=>i.el.remove());
+  items=[];
+  specialImage.style.display='none';
+  setInterval(createItem,700);
+  requestAnimationFrame(update);
+}
+
+function update(){
+  if(!running) return;
+  for(let i=items.length-1;i>=0;i--){
+    let item = items[i];
+    item.y += item.speed;
+    item.el.style.top = item.y+'px';
+
+    let itemRect = item.el.getBoundingClientRect();
+    let playerRect = player.getBoundingClientRect();
+
+    if(itemRect.bottom >= playerRect.top &&
+       itemRect.top <= playerRect.bottom &&
+       itemRect.left <= playerRect.right &&
+       itemRect.right >= playerRect.left){
+      if(item.broken){
+        running=false;
+        gameOver=true;
+        gameOverEl.style.display='flex';
+        finalScoreEl.innerText='❤️: '+score;
+      } else {
+        score++;
+        scoreEl.innerText='❤️ '+score;
+
+        
+        if(score>=25 && !item.broken){
+          item.el.innerText='❤️‍🔥';
+        }
+
+        
+        if(score>=46){
+          specialImage.style.display='block';
+        }
+      }
+      item.el.remove();
+      items.splice(i,1);
+    }
+
+    if(item.y>window.innerHeight+50){
+      item.el.remove();
+      items.splice(i,1);
+    }
+  }
+  requestAnimationFrame(update);
+}
+
+function resetGame(){
+  gameOverEl.style.display='none';
+  startGame();
+}
+</script>
+
+</body>
+</html>
